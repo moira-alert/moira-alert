@@ -80,7 +80,7 @@ func main() {
 	remoteConfig := config.Remote.GetRemoteSourceSettings()
 	localSource := local.Create(database)
 	remoteSource := remote.Create(remoteConfig)
-	metricSourceProvider := metricSource.CreateMetricSourceProvider(localSource, remoteSource)
+	metricSourceProvider := metricSource.CreateMetricSourceProvider(localSource, remoteSource, nil)
 
 	isConfigured, _ := remoteSource.IsConfigured()
 	checkerMetrics := metrics.ConfigureCheckerMetrics(serviceName, isConfigured)
@@ -98,7 +98,7 @@ func main() {
 		Logger:            logger,
 		Database:          database,
 		Config:            checkerSettings,
-		RemoteConfig:      remoteConfig,
+		GraphiteConfig:    remoteConfig,
 		SourceProvider:    metricSourceProvider,
 		Metrics:           checkerMetrics,
 		TriggerCache:      cache.New(checkerSettings.CheckInterval, time.Minute*60),

@@ -212,7 +212,7 @@ func TestTriggerStoring(t *testing.T) {
 			So(actualTriggerChecks, ShouldResemble, []*moira.TriggerCheck{triggerCheck})
 
 			//Add check data
-			err = dataBase.SetTriggerLastCheck(trigger.ID, &lastCheckTest, false)
+			err = dataBase.SetTriggerLastCheck(trigger.ID, &lastCheckTest, moira.LocalTrigger)
 			So(err, ShouldBeNil)
 
 			triggerCheck.LastCheck = lastCheckTest
@@ -271,6 +271,7 @@ func TestTriggerStoring(t *testing.T) {
 				Tags:        []string{"test-tag-1"},
 				Patterns:    []string{pattern1},
 				TriggerType: moira.RisingTrigger,
+				SourceType:  moira.LocalTrigger,
 			}
 
 			triggerVer2 := &moira.Trigger{
@@ -280,6 +281,7 @@ func TestTriggerStoring(t *testing.T) {
 				Tags:        []string{"test-tag-1"},
 				Patterns:    []string{pattern2},
 				TriggerType: moira.RisingTrigger,
+				SourceType:  moira.LocalTrigger,
 			}
 
 			val1 := &moira.MatchedMetric{
@@ -483,7 +485,7 @@ func TestTriggerStoring(t *testing.T) {
 	})
 }
 
-func TestRemoteTrigger(t *testing.T) {
+func TestGraphiteTrigger(t *testing.T) {
 	logger, _ := logging.GetLogger("dataBase")
 	dataBase := newTestDatabase(logger, config)
 	pattern := "test.pattern.remote1"
@@ -492,13 +494,13 @@ func TestRemoteTrigger(t *testing.T) {
 		Name:        "remote",
 		Targets:     []string{"test.target.remote1"},
 		Patterns:    []string{pattern},
-		IsRemote:    true,
+		SourceType:  moira.GraphiteTrigger,
 		TriggerType: moira.RisingTrigger,
 	}
 	dataBase.flush()
 	defer dataBase.flush()
 
-	Convey("Saving remote trigger", t, func() {
+	Convey("Saving graphite trigger", t, func() {
 		Convey("Trigger should be saved correctly", func() {
 			err := dataBase.SaveTrigger(trigger.ID, trigger)
 			So(err, ShouldBeNil)
@@ -516,8 +518,8 @@ func TestRemoteTrigger(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(ids, ShouldResemble, []string{})
 		})
-		Convey("Trigger should be added to remote triggers collection", func() {
-			ids, err := dataBase.GetRemoteTriggerIDs()
+		Convey("Trigger should be added to graphite triggers collection", func() {
+			ids, err := dataBase.GetGraphiteTriggerIDs()
 			So(err, ShouldBeNil)
 			So(ids, ShouldResemble, []string{trigger.ID})
 		})
@@ -534,7 +536,7 @@ func TestRemoteTrigger(t *testing.T) {
 	})
 
 	Convey("Update remote trigger as local", t, func() {
-		trigger.IsRemote = false
+		trigger.SourceType = moira.LocalTrigger
 		trigger.Patterns = []string{pattern}
 		Convey("Trigger should be saved correctly", func() {
 			err := dataBase.SaveTrigger(trigger.ID, trigger)
@@ -554,7 +556,7 @@ func TestRemoteTrigger(t *testing.T) {
 			So(ids, ShouldResemble, []string{trigger.ID})
 		})
 		Convey("Trigger shouldn't be added to remote triggers collection", func() {
-			ids, err := dataBase.GetRemoteTriggerIDs()
+			ids, err := dataBase.GetGraphiteTriggerIDs()
 			So(err, ShouldBeNil)
 			So(ids, ShouldResemble, []string{})
 		})
@@ -574,7 +576,7 @@ func TestRemoteTrigger(t *testing.T) {
 			So(patterns, ShouldResemble, trigger.Patterns)
 		})
 
-		trigger.IsRemote = true
+		trigger.SourceType = moira.GraphiteTrigger
 		Convey("Update this trigger as remote", func() {
 			err := dataBase.SaveTrigger(trigger.ID, trigger)
 			So(err, ShouldBeNil)
@@ -593,7 +595,7 @@ func TestRemoteTrigger(t *testing.T) {
 			So(ids, ShouldResemble, []string{trigger.ID})
 		})
 		Convey("Trigger should be added to remote triggers collection", func() {
-			ids, err := dataBase.GetRemoteTriggerIDs()
+			ids, err := dataBase.GetGraphiteTriggerIDs()
 			So(err, ShouldBeNil)
 			So(ids, ShouldResemble, []string{trigger.ID})
 		})
@@ -656,6 +658,7 @@ var triggers = []moira.Trigger{
 		Patterns:    []string{"test.pattern.1"},
 		TriggerType: moira.RisingTrigger,
 		TTLState:    &moira.TTLStateNODATA,
+		SourceType:  moira.LocalTrigger,
 	},
 	{
 		ID:          "triggerID-0000000000001",
@@ -664,6 +667,7 @@ var triggers = []moira.Trigger{
 		Tags:        []string{"test-tag-2", "test-tag-1"},
 		Patterns:    []string{"test.pattern.2", "test.pattern.1"},
 		TriggerType: moira.RisingTrigger,
+		SourceType:  moira.LocalTrigger,
 	},
 	{
 		ID:          "triggerID-0000000000001",
@@ -672,6 +676,7 @@ var triggers = []moira.Trigger{
 		Tags:        []string{"test-tag-2", "test-tag-3"},
 		Patterns:    []string{"test.pattern.3", "test.pattern.2"},
 		TriggerType: moira.RisingTrigger,
+		SourceType:  moira.LocalTrigger,
 	},
 	{
 		ID:          "triggerID-0000000000004",
@@ -679,6 +684,7 @@ var triggers = []moira.Trigger{
 		Targets:     []string{"test.target.4"},
 		Tags:        []string{"test-tag-4"},
 		TriggerType: moira.RisingTrigger,
+		SourceType:  moira.LocalTrigger,
 	},
 	{
 		ID:          "triggerID-0000000000005",
@@ -686,6 +692,7 @@ var triggers = []moira.Trigger{
 		Targets:     []string{"test.target.5"},
 		Tags:        []string{"test-tag-nosub"},
 		TriggerType: moira.RisingTrigger,
+		SourceType:  moira.LocalTrigger,
 	},
 	{
 		ID:          "triggerID-0000000000006",
@@ -693,6 +700,7 @@ var triggers = []moira.Trigger{
 		Targets:     []string{"test.target.6"},
 		Tags:        []string{"test-tag-throttling-disabled"},
 		TriggerType: moira.RisingTrigger,
+		SourceType:  moira.LocalTrigger,
 	},
 	{
 		ID:          "triggerID-0000000000007",
@@ -700,6 +708,7 @@ var triggers = []moira.Trigger{
 		Targets:     []string{"test.target.7"},
 		Tags:        []string{"test-tag-multiple-subs"},
 		TriggerType: moira.RisingTrigger,
+		SourceType:  moira.LocalTrigger,
 	},
 	{
 		ID:          "triggerID-0000000000008",
@@ -707,6 +716,7 @@ var triggers = []moira.Trigger{
 		Targets:     []string{"test.target.8"},
 		Tags:        []string{"test-tag-dup-contacts"},
 		TriggerType: moira.RisingTrigger,
+		SourceType:  moira.LocalTrigger,
 	},
 	{
 		ID:          "triggerID-0000000000009",
@@ -714,5 +724,6 @@ var triggers = []moira.Trigger{
 		Targets:     []string{"test.target.9"},
 		Tags:        []string{"test-degradation"},
 		TriggerType: moira.RisingTrigger,
+		SourceType:  moira.LocalTrigger,
 	},
 }

@@ -26,8 +26,8 @@ type triggerStorageElement struct {
 	PythonExpression *string             `json:"expression,omitempty"`
 	Patterns         []string            `json:"patterns"`
 	TTL              string              `json:"ttl,omitempty"`
-	IsRemote         bool                `json:"is_remote"`
 	MuteNewMetrics   bool                `json:"mute_new_metrics,omitempty"`
+	SourceType       string              `json:"source_type"`
 }
 
 func (storageElement *triggerStorageElement) toTrigger() moira.Trigger {
@@ -46,8 +46,8 @@ func (storageElement *triggerStorageElement) toTrigger() moira.Trigger {
 		PythonExpression: storageElement.PythonExpression,
 		Patterns:         storageElement.Patterns,
 		TTL:              getTriggerTTL(storageElement.TTL),
-		IsRemote:         storageElement.IsRemote,
 		MuteNewMetrics:   storageElement.MuteNewMetrics,
+		SourceType:       storageElement.SourceType,
 	}
 }
 
@@ -67,8 +67,8 @@ func toTriggerStorageElement(trigger *moira.Trigger, triggerID string) *triggerS
 		PythonExpression: trigger.PythonExpression,
 		Patterns:         trigger.Patterns,
 		TTL:              getTriggerTTLString(trigger.TTL),
-		IsRemote:         trigger.IsRemote,
 		MuteNewMetrics:   trigger.MuteNewMetrics,
+		SourceType:       trigger.SourceType,
 	}
 }
 

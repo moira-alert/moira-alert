@@ -52,10 +52,10 @@ func (worker *Checker) addTriggerIDsIfNeeded(triggerIDs []string) {
 	}
 }
 
-func (worker *Checker) addRemoteTriggerIDsIfNeeded(triggerIDs []string) {
-	needToCheckRemoteTriggerIDs := worker.getTriggerIDsToCheck(triggerIDs)
-	if len(needToCheckRemoteTriggerIDs) > 0 {
-		worker.Database.AddRemoteTriggersToCheck(needToCheckRemoteTriggerIDs)
+func (worker *Checker) addGraphiteTriggerIDsIfNeeded(triggerIDs []string) {
+	needToCheckGraphiteTriggerIDs := worker.getTriggerIDsToCheck(triggerIDs)
+	if len(needToCheckGraphiteTriggerIDs) > 0 {
+		worker.Database.AddGraphiteTriggersToCheck(needToCheckGraphiteTriggerIDs)
 	}
 }
 

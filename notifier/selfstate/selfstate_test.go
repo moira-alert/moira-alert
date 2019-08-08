@@ -203,7 +203,7 @@ func TestMoiraCheckerDoesNotChecksRemoteTriggers(t *testing.T) {
 		var sendingWG sync.WaitGroup
 		mock.database.EXPECT().GetMetricsUpdatesCount().Return(int64(1), nil)
 		mock.database.EXPECT().GetChecksUpdatesCount().Return(int64(1), nil)
-		mock.database.EXPECT().GetRemoteChecksUpdatesCount().Return(int64(1), nil)
+		mock.database.EXPECT().GetGraphiteChecksUpdatesCount().Return(int64(1), nil)
 
 		now := time.Now()
 		redisLastCheckTS = now.Unix()
@@ -215,7 +215,7 @@ func TestMoiraCheckerDoesNotChecksRemoteTriggers(t *testing.T) {
 		remoteChecksCount = 1
 
 		callingNow := now.Add(time.Second * 2)
-		appendNotificationEvents(&events, remoteCheckerStateErrorMessage, callingNow.Unix()-lastRemoteCheckTS)
+		appendNotificationEvents(&events, graphiteCheckerStateErrorMessage, callingNow.Unix()-lastRemoteCheckTS)
 		expectedPackage := configureNotificationPackage(adminContact, &events)
 
 		mock.database.EXPECT().GetNotifierState().Return(moira.SelfStateOK, nil)

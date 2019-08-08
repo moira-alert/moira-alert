@@ -3,11 +3,22 @@ version: "3.7"
 services:
   redis:
     image: redis:alpine
+    logging:
+      driver: "none"
+
+  prometheus:
+    image: prom/prometheus
+    ports:
+      - "9080:9090"
+    logging:
+      driver: "none"
 
   graphite:
     image: graphiteapp/graphite-statsd
     ports:
       - "7080:80"
+    logging:
+      driver: "none"
 
   filter:
     build:
@@ -28,6 +39,7 @@ services:
       - redis
       - filter
       - graphite
+      - prometheus
 
   notifier:
     build:
@@ -68,6 +80,8 @@ services:
       - balancer
     volumes:
       - ./local/nginx.conf:/etc/nginx/conf.d/moira.conf
+    logging:
+      driver: "none"
 
   relay:
     image: bodsch/docker-carbon-c-relay
@@ -79,5 +93,8 @@ services:
     volumes:
       - ./local/relay.conf:/home/relay/carbon-c-relay.conf
     command: /usr/bin/relay -E -s -f /home/relay/carbon-c-relay.conf
+    logging:
+      driver: "none"
+
 networks:
   balancer:

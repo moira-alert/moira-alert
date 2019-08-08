@@ -37,7 +37,7 @@ type TriggerModel struct {
 	Name string `json:"name"`
 	// Description string
 	Desc *string `json:"desc,omitempty"`
-	// Graphite-like targets: t1, t2, ...
+	// GraphiteTrigger-like targets: t1, t2, ...
 	Targets []string `json:"targets"`
 	// WARN threshold
 	WarnValue *float64 `json:"warn_value"`
@@ -55,12 +55,12 @@ type TriggerModel struct {
 	Schedule *moira.ScheduleData `json:"sched,omitempty"`
 	// Used if you need more complex logic than provided by WARN/ERROR values
 	Expression string `json:"expression"`
-	// Graphite patterns for trigger
+	// GraphiteTrigger patterns for trigger
 	Patterns []string `json:"patterns"`
-	// Shows if trigger is remote (graphite-backend) based or stored inside Moira-Redis DB
-	IsRemote bool `json:"is_remote"`
 	// If true, first event NODATA → OK will be omitted
 	MuteNewMetrics bool `json:"mute_new_metrics"`
+	// Shows if trigger is local(stored inside Moira), graphite or prometheus
+	SourceType string `json:"source_type"`
 }
 
 // ToMoiraTrigger transforms TriggerModel to moira.Trigger
@@ -79,8 +79,8 @@ func (model *TriggerModel) ToMoiraTrigger() *moira.Trigger {
 		Schedule:       model.Schedule,
 		Expression:     &model.Expression,
 		Patterns:       model.Patterns,
-		IsRemote:       model.IsRemote,
 		MuteNewMetrics: model.MuteNewMetrics,
+		SourceType:     model.SourceType,
 	}
 }
 
@@ -100,8 +100,8 @@ func CreateTriggerModel(trigger *moira.Trigger) TriggerModel {
 		Schedule:       trigger.Schedule,
 		Expression:     moira.UseString(trigger.Expression),
 		Patterns:       trigger.Patterns,
-		IsRemote:       trigger.IsRemote,
 		MuteNewMetrics: trigger.MuteNewMetrics,
+		SourceType:     trigger.SourceType,
 	}
 }
 
@@ -130,7 +130,7 @@ func (trigger *Trigger) Bind(request *http.Request) error {
 	}
 
 	metricsSourceProvider := middleware.GetTriggerTargetsSourceProvider(request)
-	metricsSource, err := metricsSourceProvider.GetMetricSource(trigger.IsRemote)
+	metricsSource, err := metricsSourceProvider.GetMetricSource(trigger.SourceType)
 	if err != nil {
 		return err
 	}

@@ -23,9 +23,9 @@ func TestExpressionModeMultipleTargetsWarnValue(t *testing.T) {
 		defer mockCtrl.Finish()
 
 		localSource := mock_metric_source.NewMockMetricSource(mockCtrl)
-		remoteSource := mock_metric_source.NewMockMetricSource(mockCtrl)
+		graphiteSource := mock_metric_source.NewMockMetricSource(mockCtrl)
 		fetchResult := mock_metric_source.NewMockFetchResult(mockCtrl)
-		sourceProvider := metricSource.CreateMetricSourceProvider(localSource, remoteSource)
+		sourceProvider := metricSource.CreateMetricSourceProvider(localSource, graphiteSource, nil)
 
 		localSource.EXPECT().IsConfigured().Return(true, nil).AnyTimes()
 		localSource.EXPECT().Fetch(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(fetchResult, nil).AnyTimes()
@@ -38,7 +38,7 @@ func TestExpressionModeMultipleTargetsWarnValue(t *testing.T) {
 		ctx = context.WithValue(ctx, middleware.ContextKey("metricSourceProvider"), sourceProvider)
 		request = request.WithContext(ctx)
 
-		desc := "Graphite ClickHouse"
+		desc := "GraphiteTrigger ClickHouse"
 		tags := []string{"Normal", "DevOps", "DevOpsGraphite-duty"}
 		throttling := int64(0)
 		warnValue := float64(10)
@@ -46,12 +46,12 @@ func TestExpressionModeMultipleTargetsWarnValue(t *testing.T) {
 
 		trigger := TriggerModel{
 			ID:             "GraphiteStoragesFreeSpace",
-			Name:           "Graphite storage free space low",
+			Name:           "GraphiteTrigger storage free space low",
 			Desc:           &desc,
 			Tags:           tags,
 			TTLState:       &moira.TTLStateNODATA,
 			TTL:            600,
-			IsRemote:       false,
+			SourceType:     moira.LocalTrigger,
 			MuteNewMetrics: false,
 		}
 
