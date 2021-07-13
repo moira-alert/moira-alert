@@ -52,12 +52,16 @@ var (
 )
 
 var (
+	cleanupMetrics = flag.Bool("cleanup-outdated-metrics", false, "Delete outdated metrics by duration. Control this on-the-fly via cleanup config.")
+)
+
+var (
 	pushTriggerDump = flag.Bool("push-trigger-dump", false, "Get trigger dump in JSON from stdin and save it to redis")
 	triggerDumpFile = flag.String("trigger-dump-file", "", "File that holds trigger dump JSON from api method response")
 )
 
 func main() { //nolint
-	confCleanup, logger, dataBase := initApp()
+	mainConfig, logger, dataBase := initApp()
 
 	if *update {
 		fromVersion := checkValidVersion(logger, updateFromVersion, true)
@@ -100,8 +104,8 @@ func main() { //nolint
 	}
 
 	if *cleanup {
-		logger.Debugf("User whitelist: %#v", confCleanup.Whitelist)
-		if err := handleCleanup(logger, dataBase, confCleanup); err != nil {
+		logger.Debugf("User whitelist: %#v", mainConfig.Cleanup.Whitelist)
+		if err := handleCleanup(logger, dataBase, mainConfig.Cleanup); err != nil {
 			logger.Error(err)
 		}
 	}
@@ -133,6 +137,16 @@ func main() { //nolint
 		}
 		logger.Info("Dump was pushed")
 	}
+
+	if *cleanupMetrics {
+		log := logger.String(moira.LogFieldNameContext, "cleanup")
+		log.Info("Cleanup outdated metrics started")
+		if err := cleanupOutdatedMetrics(mainConfig.CleanupMetrics, dataBase, log); err != nil {
+			log.Error(err)
+		}
+
+		log.Info("Cleanup outdated metrics finished")
+	}
 }
 
 func GetDumpBriefInfo(dump *dto.TriggerDump) string {
@@ -144,7 +158,7 @@ func GetDumpBriefInfo(dump *dto.TriggerDump) string {
 		dump.Created, dump.Trigger.ID, len(dump.Metrics), dump.LastCheck.LastSuccessfulCheckTimestamp)
 }
 
-func initApp() (cleanupConfig, moira.Logger, moira.Database) {
+func initApp() (config, moira.Logger, moira.Database) {
 	flag.Parse()
 	if *printVersion {
 		fmt.Println("Moira - alerting system based on graphite data")
@@ -173,7 +187,7 @@ func initApp() (cleanupConfig, moira.Logger, moira.Database) {
 
 	databaseSettings := config.Redis.GetSettings()
 	dataBase := redis.NewDatabase(logger, databaseSettings, redis.Cli)
-	return config.Cleanup, logger, dataBase
+	return config, logger, dataBase
 }
 
 func checkValidVersion(logger moira.Logger, updateFromVersion *string, isUpdate bool) string {

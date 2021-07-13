@@ -3,14 +3,15 @@ package redis
 import (
 	"encoding/json"
 	"fmt"
-
-	"github.com/gomodule/redigo/redis"
-	"gopkg.in/tomb.v2"
+	"strings"
 
 	"github.com/moira-alert/moira"
 	"github.com/moira-alert/moira/database"
 	"github.com/moira-alert/moira/database/redis/reply"
+
+	"github.com/gomodule/redigo/redis"
 	"github.com/patrickmn/go-cache"
+	"gopkg.in/tomb.v2"
 )
 
 // GetPatterns gets updated patterns array
@@ -206,10 +207,10 @@ func (connector *DbConnector) RemovePatternWithMetrics(pattern string) error {
 	}
 	c := connector.pool.Get()
 	defer c.Close()
-	c.Send("MULTI") //nolint
+	c.Send("MULTI")                          //nolint
 	c.Send("SREM", patternsListKey, pattern) //nolint
 	for _, metric := range metrics {
-		c.Send("DEL", metricDataKey(metric)) //nolint
+		c.Send("DEL", metricDataKey(metric))      //nolint
 		c.Send("DEL", metricRetentionKey(metric)) //nolint
 	}
 	c.Send("DEL", patternMetricsKey(pattern)) //nolint
@@ -272,4 +273,36 @@ func metricDataKey(metric string) string {
 
 func metricRetentionKey(metric string) string {
 	return "moira-metric-retention:" + metric
+}
+
+type MetricsDatabaseCursor struct {
+	cursor DbCursor
+}
+
+func NewMetricsDatabaseCursor(connector *DbConnector) moira.MetricsDatabaseCursor {
+	const countLimit = 100
+	return &MetricsDatabaseCursor{
+		cursor: connector.NewCursor("COUNT", countLimit, "MATCH", "moira-metric-data:*", "TYPE", "zset"),
+	}
+}
+
+func (c *MetricsDatabaseCursor) Next() ([]string, error) {
+	resp, err := c.cursor.Next()
+	if err != nil {
+		return nil, err
+	}
+	metrics := make([]string, 0, len(resp))
+	for _, elem := range resp {
+		metric := strings.TrimPrefix(string(elem.([]byte)), "moira-metric-data:")
+		metrics = append(metrics, metric)
+	}
+	return metrics, err
+}
+
+func (c *MetricsDatabaseCursor) Free() error {
+	return c.cursor.Free()
+}
+
+func (connector *DbConnector) ScanMetricNames() moira.MetricsDatabaseCursor {
+	return NewMetricsDatabaseCursor(connector)
 }

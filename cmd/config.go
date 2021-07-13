@@ -2,17 +2,17 @@ package cmd
 
 import (
 	"fmt"
-	"io/ioutil"
 	"strings"
 
+	"github.com/moira-alert/moira/database/redis"
 	"github.com/moira-alert/moira/metrics"
 
+	"github.com/fsnotify/fsnotify"
 	"github.com/moira-alert/moira/image_store/s3"
 	remoteSource "github.com/moira-alert/moira/metric_source/remote"
+	"github.com/spf13/viper"
 	"github.com/xiam/to"
 	"gopkg.in/yaml.v2"
-
-	"github.com/moira-alert/moira/database/redis"
 )
 
 // RedisConfig is a redis config structure that initialises at the start of moira
@@ -133,15 +133,23 @@ func (config *RemoteConfig) GetRemoteSourceSettings() *remoteSource.Config {
 }
 
 // ReadConfig parses config file by the given path into Moira-used type
-func ReadConfig(configFileName string, config interface{}) error {
-	configYaml, err := ioutil.ReadFile(configFileName)
-	if err != nil {
-		return fmt.Errorf("can't read file [%s] [%s]", configFileName, err.Error())
+func ReadConfig(configFilePath string, config interface{}) error {
+	viper.SetConfigFile(configFilePath)
+	viper.SetConfigType("yaml")
+
+	if err := viper.ReadInConfig(); err != nil { // Find and read the config file
+		return fmt.Errorf("can't read file [%s] [%s]", configFilePath, err.Error())
 	}
-	err = yaml.Unmarshal(configYaml, config)
-	if err != nil {
-		return fmt.Errorf("can't parse config file [%s] [%s]", configFileName, err.Error())
+	if err := viper.Unmarshal(&config); err != nil {
+		return fmt.Errorf("can't parse config file [%s] [%s]", configFilePath, err.Error())
 	}
+
+	viper.WatchConfig()
+	viper.OnConfigChange(func(e fsnotify.Event) {
+		if err := viper.ReadInConfig(); err != nil { // Find and read the config file
+			println("Error: config was not updated, fail when read config file: ", err.Error())
+		}
+	})
 	return nil
 }
 
